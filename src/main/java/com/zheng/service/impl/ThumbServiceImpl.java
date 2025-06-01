@@ -24,7 +24,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 * @description 针对表【thumb】的数据库操作Service实现
 * @createDate 2025-05-31 17:02:22
 */
-@Service
+@Service("thumbServiceDB")
 @Slf4j
 @RequiredArgsConstructor
 public class ThumbServiceImpl extends ServiceImpl<ThumbMapper, Thumb>
@@ -70,7 +70,7 @@ public class ThumbServiceImpl extends ServiceImpl<ThumbMapper, Thumb>
     }
 
     @Override
-    public Boolean unDoThumb(DoThumbRequest doThumbRequest, HttpServletRequest request) {
+    public Boolean undoThumb(DoThumbRequest doThumbRequest, HttpServletRequest request) {
         if(doThumbRequest == null ||  doThumbRequest.getBlogId() == null){
             throw new RuntimeException("参数错误");
         }

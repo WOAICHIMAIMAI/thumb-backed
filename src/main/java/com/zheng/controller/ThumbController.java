@@ -27,7 +27,7 @@ public class ThumbController {
 
     @PostMapping("/undo")
     public BaseResponse<Boolean> unDoThumb(@RequestBody DoThumbRequest doThumbRequest, HttpServletRequest request){
-        Boolean success = thumbService.unDoThumb(doThumbRequest, request);
+        Boolean success = thumbService.undoThumb(doThumbRequest, request);
         return ResultUtils.success(success);
     }
 
