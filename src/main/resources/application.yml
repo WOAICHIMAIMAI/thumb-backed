@@ -14,6 +14,14 @@ spring:
     configuration:
       map-underscore-to-camel-case: false
       log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  data:
+    # Redis 配置
+    redis:
+      database: 2
+      host: localhost
+      timeout: 5000
+      port: 6379
+
 knife4j:
   enable: true
   setting:

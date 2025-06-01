@@ -16,4 +16,6 @@ public interface ThumbService extends IService<Thumb> {
 
     Boolean unDoThumb(DoThumbRequest doThumbRequest, HttpServletRequest request);
 
+    Boolean hasThumb(Long blogId, Long userId);
+
 }
