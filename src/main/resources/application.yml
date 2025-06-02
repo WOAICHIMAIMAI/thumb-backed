@@ -21,7 +21,6 @@ spring:
       host: localhost
       timeout: 5000
       port: 6379
-
 knife4j:
   enable: true
   setting:
@@ -34,5 +33,6 @@ knife4j:
         api-rule: package
         api-rule-resources:
           - com.zheng.controller
-
+server:
+  port: 8100
 
