@@ -2,6 +2,7 @@ package com.zheng.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zheng.constant.ThumbConstant;
+import com.zheng.manager.cache.CacheManager;
 import com.zheng.model.dto.thumb.DoThumbRequest;
 import com.zheng.model.entity.Blog;
 import com.zheng.model.entity.Thumb;
@@ -24,7 +25,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 * @description 针对表【thumb】的数据库操作Service实现
 * @createDate 2025-05-31 17:02:22
 */
-@Service("thumbServiceDB")
+@Service("thumbService")
 @Slf4j
 @RequiredArgsConstructor
 public class ThumbServiceImpl extends ServiceImpl<ThumbMapper, Thumb>
@@ -37,6 +38,8 @@ public class ThumbServiceImpl extends ServiceImpl<ThumbMapper, Thumb>
     private final BlogService blogService;
 
     private final RedisTemplate<String, Object> redisTemplate;
+
+    private final CacheManager cacheManager;
 
     @Override
     public Boolean doThumb(DoThumbRequest doThumbRequest, HttpServletRequest request) {
@@ -61,7 +64,11 @@ public class ThumbServiceImpl extends ServiceImpl<ThumbMapper, Thumb>
                         .update();
                 boolean success = update && save;
                 if(success){
-                    redisTemplate.opsForHash().put(ThumbConstant.USER_THUMB_KEY_PREFIX + loginUser.getId().toString(), blogId.toString(), thumb.getId());
+                    String hashKey = ThumbConstant.USER_THUMB_KEY_PREFIX + loginUser.getId();
+                    String fieldKey = blogId.toString();
+                    Long realThumbId = thumb.getId();
+                    redisTemplate.opsForHash().put(hashKey, fieldKey, realThumbId);
+                    cacheManager.putIfPresent(hashKey, fieldKey, realThumbId);
                 }
                 return success;
             });
@@ -78,11 +85,13 @@ public class ThumbServiceImpl extends ServiceImpl<ThumbMapper, Thumb>
         synchronized (loginUser.getId().toString().intern()){
              transactionTemplate.execute(status -> {
                  Long blogId = doThumbRequest.getBlogId();
-                 Object thumbObject = redisTemplate.opsForHash().get(ThumbConstant.USER_THUMB_KEY_PREFIX + loginUser.getId().toString(), blogId.toString());
-                 if(thumbObject == null){
+                 String hashKey =  ThumbConstant.USER_THUMB_KEY_PREFIX + loginUser.getId();
+                 String fieldKey = blogId.toString();
+                 Object thumbIdObj = cacheManager.get(hashKey, fieldKey);
+                 if(thumbIdObj == null || thumbIdObj.equals(ThumbConstant.UN_THUMB_CONSTANT)){
                      throw new RuntimeException("用户未点赞！");
                  }
-                 Long thumbId = Long.valueOf(thumbObject.toString());
+                 Long thumbId = Long.valueOf(thumbIdObj.toString());
                  boolean remove = this.removeById(thumbId);
                  boolean update = blogService.lambdaUpdate()
                          .eq(Blog::getId, blogId)
@@ -90,7 +99,8 @@ public class ThumbServiceImpl extends ServiceImpl<ThumbMapper, Thumb>
                          .update();
                  boolean success = remove && update;
                  if(success){
-                     redisTemplate.opsForHash().delete(ThumbConstant.USER_THUMB_KEY_PREFIX + loginUser.getId(), blogId.toString());
+                     redisTemplate.opsForHash().delete( hashKey, fieldKey);
+                     cacheManager.putIfPresent(hashKey, fieldKey, ThumbConstant.UN_THUMB_CONSTANT);
                  }
                  return success;
              });
@@ -100,7 +110,10 @@ public class ThumbServiceImpl extends ServiceImpl<ThumbMapper, Thumb>
 
     @Override
     public Boolean hasThumb(Long blogId, Long userId) {
-        return redisTemplate.opsForHash().hasKey(ThumbConstant.USER_THUMB_KEY_PREFIX + userId, blogId.toString());
+        Object thumbIdObj = cacheManager.get(ThumbConstant.USER_THUMB_KEY_PREFIX + userId, blogId.toString());
+        if(thumbIdObj == null) return false;
+        Long thumbId = (Long) thumbIdObj;
+        return !thumbId.equals(ThumbConstant.UN_THUMB_CONSTANT);
     }
 }
 
