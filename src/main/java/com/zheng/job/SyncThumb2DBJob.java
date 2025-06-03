@@ -106,7 +106,8 @@ public class SyncThumb2DBJob {
             blogMapper.batchUpdateThumbCount(blogThumbCountMap);  
         }  
         // 异步删除  
-        Thread.startVirtualThread(() -> {  
+        Thread.startVirtualThread(() -> {
+            // 虚拟线程：普通线程在面对I/O请求时会阻塞等待，导致CPU使用率低。而虚拟线程在面对I/O请求时，会先暂时放弃做其他事情，然后等I/O完成他会回来执行任务
             redisTemplate.delete(tempThumbKey);  
         });  
     }  
