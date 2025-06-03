@@ -1,4 +1,4 @@
-package com.zheng.listener.thumb;
+package com.zheng.job;
 
 import com.google.common.collect.Sets;
 import com.zheng.constant.ThumbConstant;
